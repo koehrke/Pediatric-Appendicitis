@@ -1,0 +1,97 @@
+# Capstone Paper - Opportunities and Challenges in Pediatric Appendicitis
+# Kelsey Oehrke
+# Colorado State University Global
+# MIS581: Capstone - Business Intelligence and Data Analytics
+
+# Import Dataset File using SAS Studio
+%web_drop_table(WORK.IMPORT);
+FILENAME REFFILE '/home/u60906218/Kelsey/DataSources/PedsAppendicitis.xlsx';
+  PROC IMPORT DATAFILE=REFFILE
+  DBMS=XLSX
+  OUT=WORK.IMPORT;
+  GETNAMES=YES;
+  RUN;
+PROC CONTENTS DATA=WORK.IMPORT; 
+  RUN;
+%web_open_table(WORK.IMPORT);
+
+# BUSINESS QUESTION 1
+
+# Descriptive Statistics using SAS Studio
+proc means data=WORK.IMPORT chartype mean std min max n vardef=df; 
+  var Body_Temperature WBC_Count Segmented_Neutrophils RBC_Count Hemoglobin RDW Thrombocyte_Count CRP; 
+  class Severity; 
+  run;
+
+# Distribution Histograms & Boxplots using SAS Studio
+# White blood cell count
+proc univariate data=WORK.IMPORT vardef=df noprint;
+  var WBC_Count;
+  class Severity;
+  histogram WBC_Count;
+  run;
+proc sort data=WORK.IMPORT out=WORK.TempSorted2236;
+  by Severity;
+  run;
+proc boxplot data=WORK.TempSorted2236;
+  plot (WBC_Count)*Severity / boxstyle=schematic;
+  run;
+proc datasets library=WORK noprint;
+  delete TempSorted2236;
+  run;
+# Segmented neutrophilis
+proc univariate data=WORK.IMPORT vardef=df noprint;
+  var Segmented_Neutrophilis;
+  class Severity;
+  histogram Segmented_Neutrophilis;
+  run;
+proc sort data=WORK.IMPORT out=WORK.TempSorted2236;
+  by Severity;
+  run;
+proc boxplot data=WORK.TempSorted2236;
+  plot (Segmented_Neutrophilis)*Severity / boxstyle=schematic;
+  run;
+proc datasets library=WORK noprint;
+  delete TempSorted2236;
+  run;
+# C reactive protein 
+proc univariate data=WORK.IMPORT vardef=df noprint;
+  var CRP;
+  class Severity;
+  histogram CRP;
+  run;
+proc sort data=WORK.IMPORT out=WORK.TempSorted2236;
+  by Severity;
+  run;
+proc boxplot data=WORK.TempSorted2236;
+  plot (CRP)*Severity / boxstyle=schematic;
+  run;
+proc datasets library=WORK noprint;
+  delete TempSorted2236;
+  run;
+
+#Two-Tailed t-Tests:
+# White blood cell count
+proc ttest data=WORK.IMPORT sides=2 h0=0;
+  class severity;
+  var WBC_Count;
+  run;
+# Segmented neutrophilis
+proc ttest data=WORK.IMPORT sides=2 h0=0;
+  class severity;
+  var Segmented_Neutrophilis;
+  run;
+# C reactive protein
+proc ttest data=WORK.IMPORT sides=2 h0=0;
+  class severity;
+  var CRP;
+  run;
+
+# BUSINESS QUESTION 2
+
+# Logistic Regression
+proc logistic data=WORK.IMPORT;
+model Severity(event='complicated')=WBC_Count Segmented_Neutrophils CRP / 
+	link=logit selection=stepwise slentry=0.05 slstay=0.05 hierarchy=single 
+	technique=fisher;
+  run;
